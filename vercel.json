@@ -4,6 +4,10 @@
     {
       "src": "app.py",
       "use": "@vercel/python"
+    },
+    {
+      "src": "static/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -18,5 +22,10 @@
   ],
   "env": {
     "PYTHONPATH": "."
+  },
+  "functions": {
+    "app.py": {
+      "maxDuration": 30
+    }
   }
 }

@@ -10,16 +10,17 @@ from pathlib import Path
 # Add the current directory to Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
-# Create database tables and logs directory
-from database import create_tables
-Path("logs").mkdir(exist_ok=True)
-create_tables()
-
-# Import the FastAPI app
-from api import app
+# Use simple API for Vercel deployment
+try:
+    from api_simple import app
+    print("Using simplified API for Vercel deployment")
+except ImportError:
+    # Fallback to full API
+    from api import app
+    print("Using full API")
 
 # This is the ASGI application that Vercel will use
-application = app
+handler = app
 
 # For local testing
 if __name__ == "__main__":

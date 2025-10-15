@@ -32,19 +32,24 @@ class SyncResponse(BaseModel):
     result: Optional[dict] = None
     error: Optional[str] = None
 
-# Startup event
+# Startup event - Modified for serverless compatibility
 @app.on_event("startup")
 async def startup_event():
-    # Create database tables
-    create_tables()
+    # Create database tables (safe for serverless)
+    try:
+        create_tables()
+    except Exception as e:
+        print(f"Database initialization warning: {e}")
     
-    # Start scheduler
-    scheduler.start()
+    # Skip scheduler in serverless environment
+    if not os.getenv("VERCEL"):
+        scheduler.start()
 
 # Shutdown event
 @app.on_event("shutdown")
 async def shutdown_event():
-    scheduler.stop()
+    if not os.getenv("VERCEL"):
+        scheduler.stop()
 
 # API Routes
 @app.get("/")
