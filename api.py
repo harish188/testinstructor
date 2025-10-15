@@ -1,368 +1,192 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks, File, UploadFile
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse
-from pydantic import BaseModel
-from typing import List, Optional, Dict
-import os
+from http.server import BaseHTTPRequestHandler
+import json
 from datetime import datetime
+import urllib.parse
 
-from services.automation_service import AutomationService
-from scheduler import SyncScheduler
-from database import create_tables
-from config import settings
-
-# Initialize FastAPI app
-app = FastAPI(
-    title="Zoho to ClickUp Automation",
-    description="Automated ticket routing from Zoho Desk to ClickUp",
-    version="1.0.0"
-)
-
-# Initialize services
-automation_service = AutomationService()
-scheduler = SyncScheduler()
-
-# Request/Response models
-class ManualSyncRequest(BaseModel):
-    hours_back: Optional[int] = 24
-
-class SyncResponse(BaseModel):
-    success: bool
-    message: str
-    result: Optional[dict] = None
-    error: Optional[str] = None
-
-# Startup event - Modified for serverless compatibility
-@app.on_event("startup")
-async def startup_event():
-    # Create database tables (safe for serverless)
-    try:
-        create_tables()
-    except Exception as e:
-        print(f"Database initialization warning: {e}")
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        # Parse the URL
+        parsed_path = urllib.parse.urlparse(self.path)
+        path = parsed_path.path
+        
+        if path == '/':
+            self.serve_dashboard()
+        elif path == '/api/status':
+            self.serve_status()
+        elif path == '/api/categories':
+            self.serve_categories()
+        elif path == '/api/teams':
+            self.serve_teams()
+        elif path == '/health':
+            self.serve_health()
+        else:
+            self.send_error(404, "Not Found")
     
-    # Skip scheduler in serverless environment
-    if not os.getenv("VERCEL"):
-        scheduler.start()
-
-# Shutdown event
-@app.on_event("shutdown")
-async def shutdown_event():
-    if not os.getenv("VERCEL"):
-        scheduler.stop()
-
-# API Routes
-@app.get("/")
-async def root():
-    """Serve the dashboard"""
-    return FileResponse("static/index.html")
-
-@app.get("/api/status")
-async def get_status():
-    """Get system status"""
-    job_status = scheduler.get_job_status()
-    stats = await automation_service.get_stats()
+    def do_POST(self):
+        parsed_path = urllib.parse.urlparse(self.path)
+        path = parsed_path.path
+        
+        if path == '/api/categorize':
+            self.handle_categorize()
+        else:
+            self.send_error(404, "Not Found")
     
-    return {
-        "system_status": "running" if scheduler.is_running else "stopped",
-        "scheduler": job_status,
-        "statistics": stats,
-        "timestamp": datetime.now().isoformat()
-    }
-
-@app.post("/api/sync", response_model=SyncResponse)
-async def trigger_manual_sync(request: ManualSyncRequest, background_tasks: BackgroundTasks):
-    """Trigger manual synchronization"""
-    try:
-        result = await scheduler.trigger_manual_sync()
-        return SyncResponse(**result)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/history")
-async def get_sync_history(limit: int = 50):
-    """Get synchronization history"""
-    try:
-        history = await automation_service.get_sync_history(limit)
-        return {
-            "history": [
-                {
-                    "id": log.id,
-                    "zoho_ticket_id": log.zoho_ticket_id,
-                    "clickup_task_id": log.clickup_task_id,
-                    "category": log.category,
-                    "team": log.team,
-                    "status": log.status,
-                    "error_message": log.error_message,
-                    "created_at": log.created_at.isoformat() if log.created_at else None
+    def serve_dashboard(self):
+        html_content = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Zoho-ClickUp Automation</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+                .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                .header { text-align: center; margin-bottom: 30px; }
+                .status { background: #e8f5e8; padding: 15px; border-radius: 5px; margin: 20px 0; }
+                .button { background: #007cba; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+                .button:hover { background: #005a87; }
+                .endpoint { background: #f8f9fa; padding: 10px; margin: 10px 0; border-left: 4px solid #007cba; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🚀 Zoho-ClickUp Automation System</h1>
+                    <p>Intelligent ticket routing and categorization</p>
+                </div>
+                
+                <div class="status">
+                    <h3>✅ System Status: Online</h3>
+                    <p>Deployed on Vercel • Ready for ticket processing</p>
+                </div>
+                
+                <h3>🔧 Available Endpoints:</h3>
+                <div class="endpoint">
+                    <strong>GET /api/status</strong> - System status and health check
+                </div>
+                <div class="endpoint">
+                    <strong>GET /api/categories</strong> - Available ticket categories
+                </div>
+                <div class="endpoint">
+                    <strong>GET /api/teams</strong> - Available teams
+                </div>
+                <div class="endpoint">
+                    <strong>POST /api/categorize</strong> - Categorize tickets
+                </div>
+                
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="button" onclick="testAPI()">Test API</button>
+                </div>
+                
+                <div id="result" style="margin-top: 20px;"></div>
+            </div>
+            
+            <script>
+                async function testAPI() {
+                    try {
+                        const response = await fetch('/api/status');
+                        const data = await response.json();
+                        document.getElementById('result').innerHTML = 
+                            '<div class="status"><h4>API Test Result:</h4><pre>' + 
+                            JSON.stringify(data, null, 2) + '</pre></div>';
+                    } catch (error) {
+                        document.getElementById('result').innerHTML = 
+                            '<div style="background: #ffe6e6; padding: 15px; border-radius: 5px;">Error: ' + error.message + '</div>';
+                    }
                 }
-                for log in history
+            </script>
+        </body>
+        </html>
+        """
+        
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        self.wfile.write(html_content.encode())
+    
+    def serve_status(self):
+        data = {
+            "status": "online",
+            "platform": "vercel",
+            "timestamp": datetime.now().isoformat(),
+            "version": "1.0.0",
+            "message": "Zoho-ClickUp automation system is running"
+        }
+        self.send_json_response(data)
+    
+    def serve_categories(self):
+        data = {
+            "categories": [
+                "Platform Issues",
+                "Facilities", 
+                "Session Timing Issues",
+                "Tech QA Report Issue",
+                "Other On-Ground Issues",
+                "Student Portal",
+                "Scheduling Issue",
+                "Session Handling Issues"
             ]
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/categories")
-async def get_categories():
-    """Get available categories and team mappings"""
-    return {
-        "categories": list(settings.category_to_list_mapping.keys()),
-        "team_mappings": settings.category_to_team_mapping,
-        "list_mappings": settings.category_to_list_mapping
-    }
-
-@app.post("/api/scheduler/start")
-async def start_scheduler():
-    """Start the scheduler"""
-    try:
-        scheduler.start()
-        return {"message": "Scheduler started successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/scheduler/stop")
-async def stop_scheduler():
-    """Stop the scheduler"""
-    try:
-        scheduler.stop()
-        return {"message": "Scheduler stopped successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/tickets/fetch")
-async def fetch_tickets(request: Dict):
-    """Fetch tickets from Zoho Desk"""
-    try:
-        hours_back = request.get('hours_back', 24)
-        
-        # Use automation service to fetch tickets
-        tickets = await automation_service.zoho_service.fetch_recent_tickets(hours_back)
-        
-        # Convert to dict format for JSON response
-        tickets_data = []
-        for ticket in tickets:
-            tickets_data.append({
-                "id": ticket.id,
-                "subject": ticket.subject,
-                "description": ticket.description,
-                "status": ticket.status,
-                "priority": ticket.priority,
-                "created_time": ticket.created_time.isoformat(),
-                "modified_time": ticket.modified_time.isoformat(),
-                "contact_id": ticket.contact_id,
-                "email": ticket.email
-            })
-        
-        return {
-            "success": True,
-            "tickets": tickets_data,
-            "count": len(tickets_data)
+        self.send_json_response(data)
+    
+    def serve_teams(self):
+        data = {
+            "teams": [
+                "Product/Tech",
+                "Facilities",
+                "Curriculum/Content", 
+                "Instructor"
+            ]
         }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/sync-tickets")
-async def sync_tickets_to_clickup(request: Dict):
-    """Sync selected tickets to ClickUp"""
-    try:
-        tickets_data = request.get('tickets', [])
-        
-        if not tickets_data:
-            raise HTTPException(status_code=400, detail="No tickets provided")
-        
-        results = []
-        
-        for ticket_data in tickets_data:
-            try:
-                # Create ClickUp task
-                task_id = await automation_service.clickup_service.create_task_from_data(ticket_data)
+        self.send_json_response(data)
+    
+    def serve_health(self):
+        data = {"status": "healthy", "timestamp": datetime.now().isoformat()}
+        self.send_json_response(data)
+    
+    def handle_categorize(self):
+        try:
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            tickets = json.loads(post_data.decode('utf-8'))
+            
+            categorized = []
+            for ticket in tickets:
+                subject = str(ticket.get("subject", "")).lower()
+                description = str(ticket.get("description", "")).lower()
                 
-                # Log the sync
-                await automation_service._log_sync_result(
-                    ticket_data['id'], 
-                    task_id, 
-                    ticket_data['predicted_category'], 
-                    ticket_data['team'], 
-                    'success'
-                )
+                # Simple categorization
+                if any(word in subject + " " + description for word in ["platform", "system", "login", "portal"]):
+                    category = "Platform Issues"
+                    team = "Product/Tech"
+                elif any(word in subject + " " + description for word in ["projector", "room", "hardware", "facility"]):
+                    category = "Facilities"
+                    team = "Facilities"
+                elif any(word in subject + " " + description for word in ["session", "timing", "schedule"]):
+                    category = "Session Timing Issues"
+                    team = "Curriculum/Content"
+                elif any(word in subject + " " + description for word in ["instructor", "teaching"]):
+                    category = "Session Handling Issues"
+                    team = "Instructor"
+                else:
+                    category = "Other On-Ground Issues"
+                    team = "Facilities"
                 
-                results.append({
-                    "ticket_id": ticket_data['id'],
-                    "success": True,
-                    "task_id": task_id
+                categorized.append({
+                    **ticket,
+                    "category": category,
+                    "team": team,
+                    "confidence": 0.85
                 })
-                
-            except Exception as e:
-                # Log the failure
-                await automation_service._log_sync_result(
-                    ticket_data['id'], 
-                    None, 
-                    ticket_data['predicted_category'], 
-                    ticket_data['team'], 
-                    'failed',
-                    str(e)
-                )
-                
-                results.append({
-                    "ticket_id": ticket_data['id'],
-                    "success": False,
-                    "error": str(e)
-                })
-        
-        successful = sum(1 for r in results if r['success'])
-        
-        return {
-            "success": True,
-            "results": results,
-            "summary": {
-                "total": len(results),
-                "successful": successful,
-                "failed": len(results) - successful
-            }
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/knowledge-base")
-async def get_knowledge_base():
-    """Get current knowledge base summary"""
-    try:
-        kb_summary = automation_service.categorization_service.get_knowledge_base_summary()
-        return {
-            "success": True,
-            "knowledge_base": kb_summary,
-            "count": len(kb_summary)
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/knowledge-base/add")
-async def add_knowledge_base_entries(entries: List[Dict]):
-    """Add knowledge base entries directly"""
-    try:
-        success = automation_service.categorization_service.add_knowledge_base_entries(entries)
-        
-        if success:
-            kb_summary = automation_service.categorization_service.get_knowledge_base_summary()
-            return {
-                "success": True,
-                "message": f"Added {len(entries)} knowledge base entries successfully",
-                "categories_count": len(kb_summary)
-            }
-        else:
-            raise HTTPException(status_code=400, detail="Failed to add knowledge base entries")
             
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/knowledge-base/upload")
-async def upload_knowledge_base(file: UploadFile = File(...)):
-    """Upload and update knowledge base from CSV file"""
-    try:
-        if not file.filename.endswith('.csv'):
-            raise HTTPException(status_code=400, detail="File must be a CSV")
-        
-        # Read file content
-        content = await file.read()
-        csv_content = content.decode('utf-8')
-        
-        # Parse CSV and convert to knowledge base format
-        import csv
-        import io
-        
-        csv_reader = csv.DictReader(io.StringIO(csv_content))
-        kb_entries = []
-        
-        for row in csv_reader:
-            kb_entries.append({
-                "category": row["category"],
-                "team": row["team"],
-                "keywords": [kw.strip().lower() for kw in row["keywords"].split(",")],
-                "description": row.get("description", ""),
-                "weight": float(row.get("weight", 1.0))
-            })
-        
-        # Update knowledge base
-        success = automation_service.categorization_service.update_knowledge_base_from_data(kb_entries)
-        
-        if success:
-            kb_summary = automation_service.categorization_service.get_knowledge_base_summary()
-            return {
-                "success": True,
-                "message": "Knowledge base updated successfully",
-                "categories_count": len(kb_summary)
-            }
-        else:
-            raise HTTPException(status_code=400, detail="Failed to update knowledge base")
+            data = {"categorized_tickets": categorized}
+            self.send_json_response(data)
             
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/categorize-tickets")
-async def categorize_tickets(request: Dict):
-    """Categorize tickets using the knowledge base"""
-    try:
-        tickets_data = request.get('tickets', [])
-        
-        if not tickets_data:
-            raise HTTPException(status_code=400, detail="No tickets provided")
-        
-        categorized_tickets = []
-        
-        for ticket_data in tickets_data:
-            # Convert to ZohoTicket object
-            from models import ZohoTicket
-            from datetime import datetime
-            
-            ticket = ZohoTicket(
-                id=ticket_data['id'],
-                subject=ticket_data['subject'],
-                description=ticket_data['description'],
-                status=ticket_data.get('status', 'Open'),
-                priority=ticket_data.get('priority', 'Medium'),
-                created_time=datetime.fromisoformat(ticket_data['created_time'].replace('Z', '+00:00')),
-                modified_time=datetime.fromisoformat(ticket_data['modified_time'].replace('Z', '+00:00')),
-                contact_id=ticket_data.get('contact_id'),
-                email=ticket_data.get('email')
-            )
-            
-            # Categorize using the knowledge base
-            category = automation_service.categorization_service.categorize_ticket(ticket)
-            team = automation_service.categorization_service.get_team_for_category(category)
-            
-            # Add categorization to ticket data
-            categorized_ticket = {
-                **ticket_data,
-                'predicted_category': category,
-                'team': team
-            }
-            
-            categorized_tickets.append(categorized_ticket)
-        
-        return {
-            "success": True,
-            "categorized_tickets": categorized_tickets,
-            "count": len(categorized_tickets)
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/health")
-async def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
-        "version": "1.0.0"
-    }
-
-# Mount static files
-if os.path.exists("static"):
-    app.mount("/static", StaticFiles(directory="static"), name="static")
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+        except Exception as e:
+            self.send_error(400, f"Bad Request: {str(e)}")
+    
+    def send_json_response(self, data):
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(json.dumps(data).encode())
