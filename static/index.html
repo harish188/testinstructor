@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zoho to ClickUp Automation Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .team-product-tech { background-color: #dbeafe !important; }
+        .team-curriculum { background-color: #dcfce7 !important; }
+        .team-instructor { background-color: #fed7aa !important; }
+        .uncategorized { background-color: #fecaca !important; }
+        .excel-table { border-collapse: collapse; }
+        .excel-table th, .excel-table td { border: 1px solid #d1d5db; }
+        .sortable:hover { background-color: #f3f4f6; cursor: pointer; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: white; margin: 15% auto; padding: 20px; border-radius: 8px; width: 80%; max-width: 500px; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <i class="fas fa-sync-alt text-blue-600 text-2xl mr-3"></i>
+                    <h1 class="text-2xl font-bold text-gray-900">Zoho → ClickUp Automation</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="preview-mode" class="mr-2" checked>
+                            <span class="text-sm text-gray-600">Preview Mode</span>
+                        </label>
+                    </div>
+                    <div id="status-indicator" class="flex items-center">
+                        <div class="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
+                        <span class="text-sm text-gray-600">Ready</span>
+                    </div>
+                    <button id="fetch-tickets-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
+                        <i class="fas fa-download mr-2"></i>
+                        Fetch Tickets
+                    </button>
+                    <button id="sync-to-clickup-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center" disabled>
+                        <i class="fas fa-upload mr-2"></i>
+                        Sync to ClickUp
+                    </button>
+                    <button id="refresh-btn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center">
+                        <i class="fas fa-refresh mr-2"></i>
+                        Refresh
+                    </button>
+                    <button id="upload-kb-btn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center">
+                        <i class="fas fa-upload mr-2"></i>
+                        Upload KB
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <i class="fas fa-ticket-alt text-blue-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Tickets</p>
+                        <p id="total-tickets" class="text-2xl font-semibold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow team-stat-card" data-team="Product/Tech">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <i class="fas fa-users text-blue-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Product/Tech</p>
+                        <p id="product-tech-count" class="text-2xl font-semibold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow team-stat-card" data-team="Curriculum/Content">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <i class="fas fa-book text-green-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Curriculum/Content</p>
+                        <p id="curriculum-count" class="text-2xl font-semibold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow team-stat-card" data-team="Instructor">
+                <div class="flex items-center">
+                    <div class="p-2 bg-orange-100 rounded-lg">
+                        <i class="fas fa-chalkboard-teacher text-orange-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Instructor</p>
+                        <p id="instructor-count" class="text-2xl font-semibold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow team-stat-card" data-team="Facilities">
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-lg">
+                        <i class="fas fa-building text-purple-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Facilities</p>
+                        <p id="facilities-count" class="text-2xl font-semibold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+            
+
+        </div>
+
+        <!-- Filters and Legend -->
+        <div class="bg-white rounded-lg shadow p-4 mb-6">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <!-- Filters -->
+                <div class="flex flex-wrap gap-4">
+                    <div class="flex items-center">
+                        <label class="text-sm font-medium text-gray-700 mr-2">Category:</label>
+                        <select id="category-filter" class="px-3 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="">All Categories</option>
+                            <option value="Platform Issues">Platform Issues</option>
+                            <option value="Facilities">Facilities</option>
+                            <option value="Session Timing Issues">Session Timing Issues</option>
+                            <option value="Tech QA Report Issue">Tech QA Report Issue</option>
+                            <option value="Other On Ground Issues">Other On Ground Issues</option>
+                            <option value="Student Portal">Student Portal</option>
+                            <option value="Scheduling Issue">Scheduling Issue</option>
+                            <option value="Session Handling Issues">Session Handling Issues</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center">
+                        <label class="text-sm font-medium text-gray-700 mr-2">Team:</label>
+                        <select id="team-filter" class="px-3 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="">All Teams</option>
+                            <option value="Product/Tech">Product/Tech</option>
+                            <option value="Curriculum/Content">Curriculum/Content</option>
+                            <option value="Instructor">Instructor</option>
+                            <option value="Facilities">Facilities</option>
+                        </select>
+                    </div>
+                    <button id="clear-filters-btn" class="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50">
+                        Clear Filters
+                    </button>
+                </div>
+                
+                <!-- Legend -->
+                <div class="flex flex-wrap gap-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mr-2">Team Colors:</h3>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-blue-200 rounded mr-2"></div>
+                        <span class="text-sm text-gray-600">Product/Tech</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-green-200 rounded mr-2"></div>
+                        <span class="text-sm text-gray-600">Curriculum/Content</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-orange-200 rounded mr-2"></div>
+                        <span class="text-sm text-gray-600">Instructor</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-purple-200 rounded mr-2"></div>
+                        <span class="text-sm text-gray-600">Facilities</span>
+                    </div>
+
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-red-200 rounded mr-2"></div>
+                        <span class="text-sm text-gray-600">Uncategorized</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Excel-like Tickets Table -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-900">Tickets Dashboard</h3>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm text-gray-500">Selected: <span id="selected-count">0</span></span>
+                        <button id="select-all-btn" class="text-blue-600 hover:text-blue-800 text-sm">Select All</button>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full excel-table">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left">
+                                <input type="checkbox" id="select-all-checkbox" class="rounded">
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="id">
+                                Ticket ID <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="subject">
+                                Subject <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Description
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="category">
+                                Predicted Category <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="team">
+                                Team <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                ClickUp Task ID
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="status">
+                                Status <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="tickets-table" class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="9" class="px-6 py-8 text-center text-gray-500">
+                                <i class="fas fa-inbox text-4xl mb-4 text-gray-300"></i>
+                                <p>No tickets loaded. Click "Fetch Tickets" to get started.</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Upload Knowledge Base Modal -->
+    <div id="upload-kb-modal" class="modal">
+        <div class="modal-content">
+            <h3 class="text-lg font-semibold mb-4">Upload Knowledge Base CSV</h3>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">CSV File:</label>
+                <input type="file" id="kb-file-input" accept=".csv" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                <p class="text-xs text-gray-500 mt-1">Expected format: category,team,keywords,description</p>
+            </div>
+            <div class="mb-4">
+                <h4 class="text-sm font-medium text-gray-700 mb-2">Current Knowledge Base:</h4>
+                <div id="current-kb-preview" class="text-xs text-gray-600 max-h-32 overflow-y-auto bg-gray-50 p-2 rounded">
+                    Loading...
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="cancel-upload-btn" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
+                <button id="upload-kb-file-btn" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">Upload & Update</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Category Modal -->
+    <div id="edit-category-modal" class="modal">
+        <div class="modal-content">
+            <h3 class="text-lg font-semibold mb-4">Edit Category</h3>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Ticket ID:</label>
+                <input type="text" id="edit-ticket-id" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" readonly>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Subject:</label>
+                <input type="text" id="edit-ticket-subject" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" readonly>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Category:</label>
+                <select id="edit-category-select" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                    <option value="Platform Issues">Platform Issues</option>
+                    <option value="Facilities">Facilities</option>
+                    <option value="Session Timing Issues">Session Timing Issues</option>
+                    <option value="Tech QA Report Issue">Tech QA Report Issue</option>
+                    <option value="Other On Ground Issues">Other On Ground Issues</option>
+                    <option value="Student Portal">Student Portal</option>
+                    <option value="Scheduling Issue">Scheduling Issue</option>
+                    <option value="Session Handling Issues">Session Handling Issues</option>
+                </select>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="cancel-edit-btn" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
+                <button id="save-edit-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 flex items-center">
+            <i class="fas fa-spinner fa-spin text-blue-600 text-2xl mr-4"></i>
+            <span id="loading-text" class="text-lg">Processing...</span>
+        </div>
+    </div>
+
+    <script src="/static/dashboard.js"></script>
+</body>
+</html>

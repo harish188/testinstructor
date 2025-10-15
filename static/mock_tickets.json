@@ -1,0 +1,112 @@
+[
+  {
+    "id": "TICKET-001",
+    "subject": "Platform system crash during peak hours",
+    "description": "The platform is experiencing technical issues and crashes during peak usage hours. Database connection errors and API timeouts are occurring frequently.",
+    "status": "Open",
+    "priority": "High",
+    "created_time": "2024-10-14T10:30:00Z",
+    "modified_time": "2024-10-14T10:30:00Z",
+    "contact_id": "CONTACT-001",
+    "email": "admin@example.com"
+  },
+  {
+    "id": "TICKET-002",
+    "subject": "Projector not working in Room 101",
+    "description": "The projector equipment in Room 101 is not functioning. Students cannot see the presentation materials. Need immediate facilities support.",
+    "status": "Open",
+    "priority": "High",
+    "created_time": "2024-10-14T09:15:00Z",
+    "modified_time": "2024-10-14T09:15:00Z",
+    "contact_id": "CONTACT-002",
+    "email": "instructor@example.com"
+  },
+  {
+    "id": "TICKET-003",
+    "subject": "Session timing delay - class started 30 minutes late",
+    "description": "The scheduled session was delayed by 30 minutes due to timing issues. This affects the overall curriculum schedule and student attendance.",
+    "status": "Open",
+    "priority": "Medium",
+    "created_time": "2024-10-14T08:45:00Z",
+    "modified_time": "2024-10-14T08:45:00Z",
+    "contact_id": "CONTACT-003",
+    "email": "coordinator@example.com"
+  },
+  {
+    "id": "TICKET-004",
+    "subject": "QA testing report shows critical bugs",
+    "description": "Quality assurance testing has identified several critical bugs in the system. Technical report attached with detailed defect analysis.",
+    "status": "Open",
+    "priority": "High",
+    "created_time": "2024-10-14T07:20:00Z",
+    "modified_time": "2024-10-14T07:20:00Z",
+    "contact_id": "CONTACT-004",
+    "email": "qa@example.com"
+  },
+  {
+    "id": "TICKET-005",
+    "subject": "Student portal login issues",
+    "description": "Students are unable to access the student portal. Login authentication is failing and student dashboard is not loading properly.",
+    "status": "Open",
+    "priority": "High",
+    "created_time": "2024-10-14T06:30:00Z",
+    "modified_time": "2024-10-14T06:30:00Z",
+    "contact_id": "CONTACT-005",
+    "email": "student@example.com"
+  },
+  {
+    "id": "TICKET-006",
+    "subject": "Session handling issues with new instructor",
+    "description": "New instructor is having difficulties with session handling and class management. Need guidance on session conduct procedures.",
+    "status": "Open",
+    "priority": "Medium",
+    "created_time": "2024-10-14T05:45:00Z",
+    "modified_time": "2024-10-14T05:45:00Z",
+    "contact_id": "CONTACT-006",
+    "email": "newinstructor@example.com"
+  },
+  {
+    "id": "TICKET-007",
+    "subject": "Quiz assessment not calculating scores correctly",
+    "description": "The quiz module has issues with score calculation. Student exam results are showing incorrect marks and grading is not working properly.",
+    "status": "Open",
+    "priority": "High",
+    "created_time": "2024-10-14T04:15:00Z",
+    "modified_time": "2024-10-14T04:15:00Z",
+    "contact_id": "CONTACT-007",
+    "email": "student2@example.com"
+  },
+  {
+    "id": "TICKET-008",
+    "subject": "Data mismatching in Looker Studio dashboard",
+    "description": "Analytics data in Looker Studio is showing inconsistencies. Reporting dashboard has data mismatch issues that need DA team review.",
+    "status": "Open",
+    "priority": "Medium",
+    "created_time": "2024-10-14T03:30:00Z",
+    "modified_time": "2024-10-14T03:30:00Z",
+    "contact_id": "CONTACT-008",
+    "email": "analyst@example.com"
+  },
+  {
+    "id": "TICKET-009",
+    "subject": "Content bundle missing from curriculum",
+    "description": "The required content bundle is not available in the curriculum section. Students cannot access course materials and learning resources.",
+    "status": "Open",
+    "priority": "Medium",
+    "created_time": "2024-10-14T02:45:00Z",
+    "modified_time": "2024-10-14T02:45:00Z",
+    "contact_id": "CONTACT-009",
+    "email": "student3@example.com"
+  },
+  {
+    "id": "TICKET-010",
+    "subject": "Instructor category permissions needed",
+    "description": "Need to add instructor category permissions for new faculty member. Teacher role assignment required for accessing instructor dashboard.",
+    "status": "Open",
+    "priority": "Low",
+    "created_time": "2024-10-14T01:30:00Z",
+    "modified_time": "2024-10-14T01:30:00Z",
+    "contact_id": "CONTACT-010",
+    "email": "hr@example.com"
+  }
+]
