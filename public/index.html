@@ -106,6 +106,7 @@
             <button class="button" onclick="testStatus()">Test Status API</button>
             <button class="button" onclick="testCategories()">Test Categories</button>
             <button class="button" onclick="testTeams()">Test Teams</button>
+            <button class="button" onclick="runSync()" style="background: #28a745;">Run Sync</button>
         </div>
         
         <div id="result"></div>
@@ -134,6 +135,50 @@
                 resultDiv.className = 'error';
                 resultDiv.innerHTML = `
                     <h4>❌ ${endpoint} - Error</h4>
+                    <p>${error.message}</p>
+                    <p><small>Note: Make sure Firebase project is upgraded to Blaze plan for Cloud Functions.</small></p>
+                `;
+            }
+        }
+        
+        async function runSync() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Running sync...</p>';
+            
+            try {
+                const response = await fetch('/api/sync', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ hours_back: 24 })
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.className = 'success';
+                resultDiv.innerHTML = `
+                    <h4>✅ Sync Completed!</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 15px 0;">
+                        <div style="background: #f0f8ff; padding: 10px; border-radius: 5px;">
+                            <strong>Total Tickets:</strong> ${data.result.total_tickets}
+                        </div>
+                        <div style="background: #f0fff0; padding: 10px; border-radius: 5px;">
+                            <strong>Successful:</strong> ${data.result.successful}
+                        </div>
+                        <div style="background: #fff5ee; padding: 10px; border-radius: 5px;">
+                            <strong>Errors:</strong> ${data.result.errors}
+                        </div>
+                        <div style="background: #f5f5f5; padding: 10px; border-radius: 5px;">
+                            <strong>Execution Time:</strong> ${data.result.execution_time}s
+                        </div>
+                    </div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.className = 'error';
+                resultDiv.innerHTML = `
+                    <h4>❌ Sync Failed</h4>
                     <p>${error.message}</p>
                 `;
             }
