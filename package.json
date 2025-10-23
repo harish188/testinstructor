@@ -1,0 +1,23 @@
+{
+  "name": "zoho-clickup-automation",
+  "version": "1.0.0",
+  "description": "Automated ticket synchronization between Zoho Desk and ClickUp",
+  "scripts": {
+    "deploy": "firebase deploy",
+    "serve": "firebase serve",
+    "build": "echo 'No build step required'",
+    "test": "python3 -m pytest tests/ -v"
+  },
+  "keywords": [
+    "zoho",
+    "clickup", 
+    "automation",
+    "tickets",
+    "firebase"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "firebase-tools": "^12.0.0"
+  }
+}
