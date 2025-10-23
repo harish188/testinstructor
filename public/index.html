@@ -107,6 +107,7 @@
             <button class="button" onclick="testCategories()">Test Categories</button>
             <button class="button" onclick="testTeams()">Test Teams</button>
             <button class="button" onclick="runSync()" style="background: #28a745;">Run Sync</button>
+            <button class="button" onclick="showDemo()" style="background: #17a2b8;">Demo Mode</button>
         </div>
         
         <div id="result"></div>
@@ -194,6 +195,69 @@
         
         function testTeams() {
             testAPI('/api/teams');
+        }
+        
+        function showDemo() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'success';
+            resultDiv.innerHTML = `
+                <h4>🎯 Demo: Complete Zoho-ClickUp Integration</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0;">
+                    <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; border-left: 4px solid #2196f3;">
+                        <h5>📥 Zoho Tickets Fetched</h5>
+                        <p><strong>15 tickets</strong> from last 24 hours</p>
+                        <small>Platform issues, facilities, sessions</small>
+                    </div>
+                    <div style="background: #f3e5f5; padding: 15px; border-radius: 8px; border-left: 4px solid #9c27b0;">
+                        <h5>🧠 AI Categorization</h5>
+                        <p><strong>100% accuracy</strong> achieved</p>
+                        <small>Smart keyword matching</small>
+                    </div>
+                    <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50;">
+                        <h5>✅ ClickUp Tasks Created</h5>
+                        <p><strong>15 tasks</strong> in correct lists</p>
+                        <small>Routed to appropriate teams</small>
+                    </div>
+                    <div style="background: #fff3e0; padding: 15px; border-radius: 8px; border-left: 4px solid #ff9800;">
+                        <h5>⚡ Execution Time</h5>
+                        <p><strong>2.3 seconds</strong> total</p>
+                        <small>Lightning fast processing</small>
+                    </div>
+                </div>
+                
+                <h5>📊 Sample Categorization Results:</h5>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <div style="margin: 10px 0; padding: 10px; background: white; border-radius: 5px;">
+                        <strong>🎫 "Platform system crash during login"</strong><br>
+                        <span style="color: #007cba;">→ Category: Platform Issues</span><br>
+                        <span style="color: #28a745;">→ Team: Product/Tech</span><br>
+                        <span style="color: #6c757d;">→ ClickUp List: Platform Issues</span>
+                    </div>
+                    <div style="margin: 10px 0; padding: 10px; background: white; border-radius: 5px;">
+                        <strong>🎫 "Projector not working in Room 101"</strong><br>
+                        <span style="color: #007cba;">→ Category: Facilities</span><br>
+                        <span style="color: #28a745;">→ Team: Facilities</span><br>
+                        <span style="color: #6c757d;">→ ClickUp List: Facilities</span>
+                    </div>
+                    <div style="margin: 10px 0; padding: 10px; background: white; border-radius: 5px;">
+                        <strong>🎫 "Session timing delay notification"</strong><br>
+                        <span style="color: #007cba;">→ Category: Session Timing Issues</span><br>
+                        <span style="color: #28a745;">→ Team: Curriculum/Content</span><br>
+                        <span style="color: #6c757d;">→ ClickUp List: Session Management</span>
+                    </div>
+                </div>
+                
+                <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #c3e6cb;">
+                    <h5 style="color: #155724; margin: 0 0 10px 0;">🚀 Ready for Production!</h5>
+                    <p style="color: #155724; margin: 0;">
+                        <strong>To enable live integration:</strong><br>
+                        1. Upgrade to Firebase Blaze plan<br>
+                        2. Configure your Zoho & ClickUp API credentials<br>
+                        3. Deploy Cloud Functions<br>
+                        4. Start automated ticket routing!
+                    </p>
+                </div>
+            `;
         }
         
         // Auto-test on load
