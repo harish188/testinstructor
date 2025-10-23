@@ -15,17 +15,27 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class ZohoService:
-    """Service for Zoho Desk API integration"""
+    """Service for Zoho Desk API integration (with demo mode)"""
     
     def __init__(self):
-        self.client_id = os.environ.get('ZOHO_CLIENT_ID')
-        self.client_secret = os.environ.get('ZOHO_CLIENT_SECRET') 
-        self.refresh_token = os.environ.get('ZOHO_REFRESH_TOKEN')
-        self.org_id = os.environ.get('ZOHO_ORGANIZATION_ID')
+        self.client_id = os.environ.get('ZOHO_CLIENT_ID', 'demo_client_id')
+        self.client_secret = os.environ.get('ZOHO_CLIENT_SECRET', 'demo_client_secret') 
+        self.refresh_token = os.environ.get('ZOHO_REFRESH_TOKEN', 'demo_refresh_token')
+        self.org_id = os.environ.get('ZOHO_ORGANIZATION_ID', 'demo_org_id')
         self.access_token = None
+        self.demo_mode = not all([
+            os.environ.get('ZOHO_CLIENT_ID'),
+            os.environ.get('ZOHO_CLIENT_SECRET'),
+            os.environ.get('ZOHO_REFRESH_TOKEN')
+        ])
         
     def get_access_token(self):
         """Get fresh access token using refresh token"""
+        if self.demo_mode:
+            logger.info("Running in demo mode - using mock access token")
+            self.access_token = "demo_access_token"
+            return self.access_token
+            
         if not all([self.client_id, self.client_secret, self.refresh_token]):
             logger.warning("Zoho credentials not configured")
             return None
@@ -48,7 +58,11 @@ class ZohoService:
         return None
     
     def get_tickets(self, hours_back: int = 24) -> List[Dict]:
-        """Fetch tickets from Zoho Desk"""
+        """Fetch tickets from Zoho Desk (with demo data)"""
+        if self.demo_mode:
+            logger.info("Running in demo mode - returning mock tickets")
+            return self._get_demo_tickets()
+            
         if not self.get_access_token():
             return []
             
@@ -75,13 +89,73 @@ class ZohoService:
             logger.error(f"Error fetching Zoho tickets: {e}")
         
         return []
+    
+    def _get_demo_tickets(self) -> List[Dict]:
+        """Generate realistic demo tickets"""
+        return [
+            {
+                'id': 'DEMO001',
+                'subject': 'Platform system crash during login',
+                'description': 'Users are unable to access the learning platform. System shows error 500 when trying to authenticate.',
+                'priority': 'High',
+                'status': 'Open',
+                'createdTime': (datetime.now() - timedelta(hours=2)).isoformat(),
+                'modifiedTime': (datetime.now() - timedelta(hours=1)).isoformat()
+            },
+            {
+                'id': 'DEMO002', 
+                'subject': 'Projector not working in Room 101',
+                'description': 'The projector in classroom 101 is not displaying properly. Hardware issue suspected.',
+                'priority': 'Medium',
+                'status': 'Open',
+                'createdTime': (datetime.now() - timedelta(hours=4)).isoformat(),
+                'modifiedTime': (datetime.now() - timedelta(hours=3)).isoformat()
+            },
+            {
+                'id': 'DEMO003',
+                'subject': 'Session timing delay notification not working',
+                'description': 'Students are not receiving notifications about session timing changes and delays.',
+                'priority': 'Medium', 
+                'status': 'Open',
+                'createdTime': (datetime.now() - timedelta(hours=6)).isoformat(),
+                'modifiedTime': (datetime.now() - timedelta(hours=5)).isoformat()
+            },
+            {
+                'id': 'DEMO004',
+                'subject': 'QA report generation failing',
+                'description': 'The automated QA report generation is failing with database connection errors.',
+                'priority': 'High',
+                'status': 'Open', 
+                'createdTime': (datetime.now() - timedelta(hours=8)).isoformat(),
+                'modifiedTime': (datetime.now() - timedelta(hours=7)).isoformat()
+            },
+            {
+                'id': 'DEMO005',
+                'subject': 'Student portal dashboard not loading',
+                'description': 'Student dashboard is showing blank page after login. Console shows JavaScript errors.',
+                'priority': 'High',
+                'status': 'Open',
+                'createdTime': (datetime.now() - timedelta(hours=10)).isoformat(),
+                'modifiedTime': (datetime.now() - timedelta(hours=9)).isoformat()
+            },
+            {
+                'id': 'DEMO006',
+                'subject': 'Instructor unable to mark attendance',
+                'description': 'The attendance marking feature in instructor portal is not responding to clicks.',
+                'priority': 'Medium',
+                'status': 'Open',
+                'createdTime': (datetime.now() - timedelta(hours=12)).isoformat(),
+                'modifiedTime': (datetime.now() - timedelta(hours=11)).isoformat()
+            }
+        ]
 
 class ClickUpService:
-    """Service for ClickUp API integration"""
+    """Service for ClickUp API integration (with demo mode)"""
     
     def __init__(self):
-        self.api_token = os.environ.get('CLICKUP_API_TOKEN')
-        self.team_id = os.environ.get('CLICKUP_TEAM_ID')
+        self.api_token = os.environ.get('CLICKUP_API_TOKEN', 'demo_clickup_token')
+        self.team_id = os.environ.get('CLICKUP_TEAM_ID', 'demo_team_id')
+        self.demo_mode = not bool(os.environ.get('CLICKUP_API_TOKEN'))
         
     def get_headers(self):
         return {
@@ -90,7 +164,13 @@ class ClickUpService:
         }
     
     def create_task(self, list_id: str, ticket_data: Dict) -> Optional[str]:
-        """Create task in ClickUp"""
+        """Create task in ClickUp (with demo mode)"""
+        if self.demo_mode:
+            logger.info(f"Demo mode: Would create task '{ticket_data.get('subject')}' in list {list_id}")
+            # Generate a fake task ID for demo
+            import random
+            return f"DEMO_TASK_{random.randint(100000, 999999)}"
+            
         if not self.api_token:
             logger.warning("ClickUp API token not configured")
             return None
@@ -134,37 +214,37 @@ class CategorizationService:
     """Service for intelligent ticket categorization"""
     
     def __init__(self):
-        # Load knowledge base from Firestore or use default
+        # Load knowledge base from Firestore or use default with demo list IDs
         self.categories = {
             "Platform Issues": {
                 "keywords": ["platform", "system", "login", "portal", "access", "authentication"],
                 "team": "Product/Tech",
-                "list_id": os.environ.get('PLATFORM_LIST_ID', '')
+                "list_id": os.environ.get('PLATFORM_LIST_ID', 'demo_platform_list_123')
             },
             "Facilities": {
                 "keywords": ["projector", "room", "hardware", "facility", "equipment", "maintenance"],
                 "team": "Facilities", 
-                "list_id": os.environ.get('FACILITIES_LIST_ID', '')
+                "list_id": os.environ.get('FACILITIES_LIST_ID', 'demo_facilities_list_456')
             },
             "Session Timing Issues": {
                 "keywords": ["session", "timing", "schedule", "delay", "reschedule"],
                 "team": "Curriculum/Content",
-                "list_id": os.environ.get('SESSION_LIST_ID', '')
+                "list_id": os.environ.get('SESSION_LIST_ID', 'demo_session_list_789')
             },
             "Tech QA Report Issue": {
                 "keywords": ["qa", "quality", "report", "bug", "testing"],
                 "team": "Product/Tech",
-                "list_id": os.environ.get('QA_LIST_ID', '')
+                "list_id": os.environ.get('QA_LIST_ID', 'demo_qa_list_101')
             },
             "Student Portal": {
                 "keywords": ["student", "portal", "enrollment", "profile", "dashboard"],
                 "team": "Product/Tech", 
-                "list_id": os.environ.get('STUDENT_LIST_ID', '')
+                "list_id": os.environ.get('STUDENT_LIST_ID', 'demo_student_list_202')
             },
             "Session Handling Issues": {
-                "keywords": ["instructor", "teaching", "class", "session handling"],
+                "keywords": ["instructor", "teaching", "class", "session handling", "attendance", "mark"],
                 "team": "Instructor",
-                "list_id": os.environ.get('INSTRUCTOR_LIST_ID', '')
+                "list_id": os.environ.get('INSTRUCTOR_LIST_ID', 'demo_instructor_list_303')
             }
         }
     
@@ -313,13 +393,21 @@ def api(req: https_fn.Request) -> https_fn.Response:
     try:
         # Status endpoint
         if path == '/status' and method == 'GET':
+            zoho_demo = not bool(os.environ.get('ZOHO_CLIENT_ID'))
+            clickup_demo = not bool(os.environ.get('CLICKUP_API_TOKEN'))
+            
             return _json_response({
                 "status": "online",
                 "platform": "firebase",
                 "timestamp": datetime.now().isoformat(),
                 "version": "1.0.0",
                 "message": "Full Zoho-ClickUp automation system running",
-                "features": ["zoho_integration", "clickup_integration", "auto_categorization", "real_time_sync"]
+                "mode": "demo" if (zoho_demo or clickup_demo) else "production",
+                "integrations": {
+                    "zoho": "demo" if zoho_demo else "live",
+                    "clickup": "demo" if clickup_demo else "live"
+                },
+                "features": ["zoho_integration", "clickup_integration", "auto_categorization", "real_time_sync", "demo_mode"]
             })
         
         # Categories endpoint
